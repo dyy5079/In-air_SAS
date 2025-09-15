@@ -1,0 +1,51 @@
+import numpy as np
+
+def get_air_speed(P, model_flag=0):
+    """
+    GETAIRSPEED Estimates sound speed in air
+        P = structure with per-ping temperature and humidity measurements
+        modelFlag = flag for choice of sound speed model
+            0 = simple first order approximation, temperature dependence only
+            1 = higher order polynomial equation with temperature and humidity
+        soundSpeed = sound speed estimates, m/s
+    """
+    temp = np.mean(P.temp, axis=1)  # mean air temperature from two sensors
+    humidity = P.humidity * 0.01    # relative humidity as a fraction
+
+    if model_flag == 0:
+        sound_speed = 331.6 + 0.61 * temp
+    elif model_flag == 1:
+        # Owen Cramer, JASA 1992
+        tempK = temp + 273.15
+        p = 101.325e3
+        f = 1.00062 + 3.14e-8 * p + 5.6e-7 * temp**2
+        psv = np.exp(1.2811805e-5 * tempK**2 - 1.9509874e-2 * tempK + 34.04926034 - 6.3536311e3 / tempK)
+        xw = humidity * f * psv / p
+        xc = 0.0004
+        a0 = 331.5024
+        a1 = 0.603055
+        a2 = -0.000528
+        a3 = 51.471935
+        a4 = 0.1495874
+        a5 = -0.000782
+        a6 = -1.82e-7
+        a7 = 3.73e-8
+        a8 = -2.93e-10
+        a9 = -85.20931
+        a10 = -0.228525
+        a11 = 5.91e-5
+        a12 = -2.835149
+        a13 = -2.15e-13
+        a14 = 29.179762
+        a15 = 0.000486
+        sound_speed = (
+            a0 + a1 * temp + a2 * temp**2 +
+            (a3 + a4 * temp + a5 * temp**2) * xw +
+            (a6 + a7 * temp + a8 * temp**2) * p +
+            (a9 + a10 + a11 * temp**2) * xc +
+            a12 * xw**2 + a13 * p**2 + a14 * xc**2 + a15 * xw * p * xc
+        )
+    else:
+        raise ValueError("model_flag must be 0 or 1")
+
+    return sound_speed
