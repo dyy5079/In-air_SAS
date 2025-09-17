@@ -1,6 +1,6 @@
 import numpy as np
 
-def gen_lfm(f_start, bw, tau, fs):
+def genLfm(f_start, bw, tau, fs):
     """
     GENLFM Generates a real-valued linear frequency modulated (LFM) chirp
     

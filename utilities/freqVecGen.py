@@ -1,6 +1,6 @@
 import numpy as np
 
-def freq_vec_gen(Nt, fs):
+def freqVecGen(Nt, fs):
     """
     FREQVECGEN Generates a vector of frequencies that correspond to the
     elements of an FFT with Nt samples at fs sampling rate.  This function

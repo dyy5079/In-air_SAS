@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_air_speed(P, model_flag=0):
+def getAirSpeed(P, model_flag=0):
     """
     GETAIRSPEED Estimates sound speed in air
         P = structure with per-ping temperature and humidity measurements
