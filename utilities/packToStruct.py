@@ -1,11 +1,12 @@
 import numpy as np
 import h5py
 import pandas as pd
-from scipy.signal import tukey, hilbert, firwin, lfilter
-from initStruct import initStruct, Wfm
-from getAirSpeed import getAirSpeed
-from genLfm import genLfm
-from freqVecGen import freqVecGen
+from scipy.signal import hilbert, firwin, lfilter, remez
+from scipy.signal.windows import tukey
+from .initStruct import initStruct, singleEmptyStruct
+from .getAirSpeed import getAirSpeed
+from .genLfm import genLfm
+from .freqVecGen import freqVecGen
 
 class P:
     def __init__(self):
@@ -65,7 +66,7 @@ def removeGroupDelay(A):
     return A
 
 def txBlanker(A):
-    pulseReplicaLength = int(A.Wfm['pulseLength'] * A.Params.fs)
+    pulseReplicaLength = int(A.Wfm.pulseLength * A.Params.fs)
     if pulseReplicaLength % 1 != 0:
         raise ValueError('PP_AIRSAS: Pulse length not an integer sample length')
     blankLength = pulseReplicaLength
@@ -87,20 +88,20 @@ def packToStruct(folder, filename, chanSelect, cSelect):
 
     # Load non-acoustic parameters
     with h5py.File(dPath, 'r') as f:
-        P = P()
-        P.temp = np.array(f['/na/temperature'])
-        P.humidity = np.array(f['/na/humidity'])
-        P.position = np.array(f['/na/position'])
-    P.soundSpeed = getAirSpeed(P, cSelect)
+        params = P()
+        params.temp = np.array(f['/na/temperature'])
+        params.humidity = np.array(f['/na/humidity'])
+        params.position = np.array(f['/na/position'])
+    params.soundSpeed = getAirSpeed(params, cSelect)
 
     # Acquisition parameters
     daqParams = pd.read_csv(f"{folder}/characterization data/acquistionParams.csv", header=None)
-    P.fs = daqParams.iloc[0, 1]
+    params.fs = daqParams.iloc[0, 1]
     # For collection_date, you may need to use h5py's attrs
     with h5py.File(dPath, 'r') as f:
-        P.time = f.attrs['collection_date']
+        params.time = f.attrs['collection_date']
     for i in range(len(A)):
-        A[i].Params = P
+        A[i].Params = params
     groupDelay = daqParams.iloc[1, 1]
 
     sensorCoord = np.loadtxt(f"{folder}/characterization data/sensorCoordinates.csv", delimiter=',')
@@ -110,27 +111,28 @@ def packToStruct(folder, filename, chanSelect, cSelect):
         A[n].Hardware.groupDelay = groupDelay
 
     # Waveform parameters
-    Wfm = Wfm()
-    Wfm.pulseType = 'LFM'
-    Wfm.fStart = daqParams.iloc[7, 1]
-    Wfm.fStop = daqParams.iloc[8, 1]
-    Wfm.pulseLength = daqParams.iloc[9, 1]
-    Wfm.amplitude = daqParams.iloc[10, 1]
-    pulseReplica = genLfm(Wfm.fStart, Wfm.fStop - Wfm.fStart, Wfm.pulseLength, P.fs)
-    win = tukey(int(Wfm.pulseLength * P.fs), daqParams.iloc[12, 1])
-    Wfm.pulseReplica = pulseReplica * win
+    temp_struct = singleEmptyStruct()
+    wfm = temp_struct.Wfm.__class__()  # Create a new instance of the Wfm class
+    wfm.pulseType = 'LFM'
+    wfm.fStart = daqParams.iloc[7, 1]
+    wfm.fStop = daqParams.iloc[8, 1]
+    wfm.pulseLength = daqParams.iloc[9, 1]
+    wfm.amplitude = daqParams.iloc[10, 1]
+    pulseReplica = genLfm(wfm.fStart, wfm.fStop - wfm.fStart, wfm.pulseLength, params.fs)
+    win = tukey(int(wfm.pulseLength * params.fs), daqParams.iloc[12, 1])
+    wfm.pulseReplica = pulseReplica * win
     for i in range(len(A)):
-        A[i].Wfm = Wfm.copy()
+        A[i].Wfm = wfm  # Remove .copy() as it may not be available
 
     # Pack the time series data
-    for n in range(1, len(A)):
+    for n in range(len(A)):  # Changed from range(1, len(A)) to range(len(A))
         with h5py.File(dPath, 'r') as f:
             A[n].Data.tsRaw = np.array(f[f"/ch{chanSelect[n]}/ts"])
         A[n].Data.tsRC = A[n].Data.tsRaw.copy()
         A[n].Data.tsRC -= np.mean(A[n].Data.tsRC)
         A[n] = removeGroupDelay(A[n])
         A[n] = txBlanker(A[n])
-        bandEdge = min([A[n].Wfm['fStart'], A[n].Wfm['fStop']])
+        bandEdge = min([A[n].Wfm.fStart, A[n].Wfm.fStop])  # Changed from dictionary access to attribute access
         if bandEdge >= 5e3:
             b = AirsasHpf(bandEdge-2e3, bandEdge, A[n].Params.fs)
             A[n].Data.tsRC = lfilter(b, 1, A[n].Data.tsRC)

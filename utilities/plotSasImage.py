@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sasColormap import sasColormap
+from .sasColormap import sas_colormap
 
 def plotSasImage(A, dynamicRange, normFlag=None):
     """
@@ -28,7 +28,7 @@ def plotSasImage(A, dynamicRange, normFlag=None):
         img,
         extent=[xVect[0], xVect[-1], yVect[-1], yVect[0]],
         aspect='auto',
-        cmap=sasColormap()
+        cmap=sas_colormap()
     )
     plt.gca().invert_yaxis()
     plt.gca().invert_xaxis()
