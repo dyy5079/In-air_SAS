@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.signal import resample
-
-def reconstruct_image(A, r, img_plane, fov):
+#import pdb; pdb.set_trace()
+def reconstructImage(A, r, img_plane, fov):
     """
     bpLAirSAS Reconstructs a SAS image using backprojection
         Inputs:
@@ -16,10 +16,13 @@ def reconstruct_image(A, r, img_plane, fov):
     c = A.Params.soundSpeed # sound speed, m/s (array-like)
     fs = A.Params.fs         # sampling rate, Hz
     
-    n_pings = len(A.Params.position)  # number of pings
-
-    # Resample the data
-    data = resample(A.Data.tsRC, r, 1, axis=0)
+    # A.Params.position has shape (1, 1001) - we want the number of columns (1001)
+    n_pings = A.Params.position.shape[1]  # number of pings is the number of columns
+    
+    # Resample the data - upsample by factor r
+    original_samples = A.Data.tsRC.shape[0]
+    new_samples = int(original_samples * r) # new number of samples after resampling
+    data = resample(A.Data.tsRC, new_samples, axis=0)
     recording_scope = data.shape[0]
 
     # Define the scene extent
@@ -32,9 +35,17 @@ def reconstruct_image(A, r, img_plane, fov):
 
     # Backprojection (delay and sum)
     for ping in range(n_pings):
-        m_position = A.Params.position[ping]
-        Rx = A.Hardware.rxPos + np.array([m_position, 0, 0])
-        Tx = A.Hardware.txPos + np.array([m_position, 0, 0])
+        # A.Params.position has shape (1, 1001), so we access [0, ping] to get the ping-th position
+        # Progress tracking to detect infinite loops
+        if ping % 100 == 0:  # Print every 100 iterations
+            print(f"Processing ping {ping}/{n_pings} ({ping/n_pings*100:.1f}%)")
+    
+        m_position_value = A.Params.position[0, ping]
+        
+        position_offset = np.array([m_position_value, 0, 0])  # x-axis movement only
+        
+        Rx = A.Hardware.rxPos + position_offset
+        Tx = A.Hardware.txPos + position_offset
 
         # Compute distance from Tx to each pixel and back to Rx
         distMtx = (
@@ -45,7 +56,7 @@ def reconstruct_image(A, r, img_plane, fov):
 
         # Nearest neighbor interpolation
         time_indices = np.round(distMtx / c[ping] * fs * r).astype(int)
-        times = np.minimum(time_indices, recording_scope)
+        times = np.clip(time_indices, 0, recording_scope - 1)
 
         # Isolate the ping
         p_data = data[:, ping]

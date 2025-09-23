@@ -9,7 +9,7 @@ def getAirSpeed(P, model_flag=0):
             1 = higher order polynomial equation with temperature and humidity
         soundSpeed = sound speed estimates, m/s
     """
-    temp = np.mean(P.temp, axis=1)  # mean air temperature from two sensors
+    temp = np.mean(P.temp, axis=0)  # mean air temperature across sensors for each time point
     humidity = P.humidity * 0.01    # relative humidity as a fraction
 
     if model_flag == 0:

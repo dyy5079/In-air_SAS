@@ -8,7 +8,7 @@ plt.imshow(your_image, cmap=cmap)
 
 import numpy as np
 
-def sas_colormap():
+def sasColormap():
     """
     SASCOLORMAP generates a colormap for the display of SAS imagery
     """

@@ -12,8 +12,8 @@ def freqVecGen(Nt, fs):
     fs - Sampling frequency, Hz
     freqVec - Vector of frequencies
     """
-    
-    df = fs / Nt  # frequency step
+
+    df = float(fs) / float(Nt)  # frequency step
 
     if Nt % 2 == 0:  # even number of points
         freq_vec = np.arange(-Nt//2, Nt//2) * df
