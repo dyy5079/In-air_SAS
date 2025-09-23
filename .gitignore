@@ -1,6 +1,9 @@
 # Ignore data directory
 data/
 
+# Ignore generated plots
+output_plots/
+
 # Python cache files
 __pycache__/
 *.py[cod]
