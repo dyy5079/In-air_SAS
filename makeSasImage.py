@@ -32,7 +32,7 @@ if not os.path.exists(dPath):
     exit()
 
 # load and plot a SAS image
-loadCh = 1  # data channel to load
+loadCh = 4  # data channel to load
 
 try:
     with h5py.File(dPath, 'r') as f:
@@ -44,8 +44,12 @@ except Exception as e:
     print(f"Error reading HDF5 file: {e}")
     exit()
 
+# Create output directory for saving plots
+output_dir = os.path.join(basePath, 'output_plots')
+os.makedirs(output_dir, exist_ok=True)
+
 # plot the magnitude of the image
-plt.figure(1)
+plt.figure(1, figsize=(12, 4))  # width=12 inches, height=4 inches
 plt.imshow(20 * np.log10(np.abs(sasImg) + 1e-12),       # adding 1e-12 to avoid log of zero
            extent=[xVec[0], xVec[-1], yVec[0], yVec[-1]], 
            aspect='auto', 
@@ -54,17 +58,20 @@ plt.imshow(20 * np.log10(np.abs(sasImg) + 1e-12),       # adding 1e-12 to avoid 
 plt.xlabel('Along-track (m)')
 plt.ylabel('Cross-track (m)')
 plt.clim([0, 30])
-plt.colorbar()
+h = plt.colorbar()
+h.set_label('Amplitude (dB re: 1V @ 1m)')
 
 # Add more tick marks for better readability
 plt.xticks(np.arange(float(xVec[0]), float(xVec[-1]), 0.5))  # X-axis ticks every 0.5 meters
 plt.yticks(np.arange(float(yVec[0]), float(yVec[-1]), 0.2))  # Y-axis ticks every 0.2 meters
 
 # Invert axes to put 0 at top (y) and right (x)
-plt.gca().invert_yaxis()  # 0 at top for y-axis
-plt.gca().invert_xaxis()  # 0 at right for x-axis
+#plt.gca().invert_yaxis()  # 0 at top for y-axis
+#plt.gca().invert_xaxis()  # 0 at right for x-axis
 
-plt.show()
+# Save the plot before showing
+plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{loadCh}.png'), dpi=300, bbox_inches='tight')
+#plt.show()
 
 print("Loading and plotting basic SAS image...")
 
@@ -95,6 +102,7 @@ normFlag = 1  # flag to apply 30*log10(r) range normalization to the imagery
 dynamicRange = 35  # dynamic range to display in the image, dB
 
 # Reconstruct imagery one channel (one microphone) at a time
+backscatter_img = []
 for m in range(len(chanSelect)):
     # pass the image reconstruction parameters to the data structure
     A[m].Results.Bp.xVect = np.arange(along_track[0], along_track[1] + dx, dx)
@@ -103,10 +111,11 @@ for m in range(len(chanSelect)):
     A[m].Results.Bp.fov = fov
     
     # reconstruct the imagery
-    A[m] = reconstructImage(A[m], resampling_ratio, img_plane, fov)
+    backscatter_img.append(reconstructImage(A[m], resampling_ratio, img_plane, fov))
     print(f'Backprojection of Channel {chanSelect[m]} Complete')
     
     # plot the reconstructed imagery
-    plt.figure()
-    plotSasImage(A[m], dynamicRange, normFlag)
-    plt.show()
+    plt.figure(figsize=(12, 4))  # width=12 inches, height=4 inches
+    plotSasImage(backscatter_img[m], dynamicRange, normFlag, output_dir, filename, chanSelect, m)
+    
+    #plt.show()

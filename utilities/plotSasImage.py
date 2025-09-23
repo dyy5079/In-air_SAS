@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 from .sasColormap import sasColormap
 from matplotlib.colors import ListedColormap
 
-def plotSasImage(A, dynamicRange, normFlag=None):
+def plotSasImage(A, dynamicRange, normFlag=None, output_dir='output_plots', filename='sas_image', chanSelect=[1], m=0):
     """
     PLOTSASIMAGE Makes plot of linear AirSAS image
         A = Single-channel AirSAS data structure
@@ -43,4 +44,5 @@ def plotSasImage(A, dynamicRange, normFlag=None):
         h.set_label('Amplitude (dB re: 1V @ 1m)')
     else:
         h.set_label('Amplitude (dB re: 1V)')
-    plt.show()
+    plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection_ch{m}.png'), dpi=300, bbox_inches='tight')
+    #plt.show()
