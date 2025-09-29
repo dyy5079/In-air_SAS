@@ -36,8 +36,7 @@ loadCh = 4  # data channel to load
 
 try:
     with h5py.File(dPath, 'r') as f:
-        print(f"Available groups in file: {list(f.keys())}")
-        sasImg = f[f'/ch{loadCh}/img_re'][:] + 1j * f[f'/ch{loadCh}/img_im'][:]  # complex-valued SAS image
+        tsRaw = f[f'/ch{loadCh}/img_re'][:] + 1j * f[f'/ch{loadCh}/img_im'][:]  # complex-valued SAS image
         xVec = f['/na/xVec'][:]  # vector of pixels coordinates in the along-track direction, m
         yVec = f['/na/yVec'][:]  # vector of pixels coordinates in the cross-track direction, m
 except Exception as e:
@@ -50,7 +49,7 @@ os.makedirs(output_dir, exist_ok=True)
 
 # plot the magnitude of the image
 plt.figure(1, figsize=(12, 4))  # width=12 inches, height=4 inches
-plt.imshow(20 * np.log10(np.abs(sasImg) + 1e-12),       # adding 1e-12 to avoid log of zero
+plt.imshow(20 * np.log10(np.abs(tsRaw) + 1e-12),       # adding 1e-12 to avoid log of zero
            extent=[xVec[0], xVec[-1], yVec[0], yVec[-1]], 
            aspect='auto', 
            origin='lower',
@@ -62,20 +61,18 @@ h = plt.colorbar()
 h.set_label('Amplitude (dB re: 1V @ 1m)')
 
 # Add more tick marks for better readability
-plt.xticks(np.arange(float(xVec[0]), float(xVec[-1]), 0.5))  # X-axis ticks every 0.5 meters
-plt.yticks(np.arange(float(yVec[0]), float(yVec[-1]), 0.2))  # Y-axis ticks every 0.2 meters
+plt.xticks(np.arange(xVec[0].item(), xVec[-1].item(), 0.5))  # X-axis ticks every 0.5 meters
+plt.yticks(np.arange(yVec[0].item(), yVec[-1].item(), 0.2))  # Y-axis ticks every 0.2 meters
 
-# Invert axes to put 0 at top (y) and right (x)
 #plt.gca().invert_yaxis()  # 0 at top for y-axis
 #plt.gca().invert_xaxis()  # 0 at right for x-axis
 
-# Save the plot before showing
-plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{loadCh}.png'), dpi=300, bbox_inches='tight')
+#plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{loadCh}.png'), dpi=300, bbox_inches='tight')
 #plt.show()
 
 print("Loading and plotting basic SAS image...")
 
-print(f"Successfully loaded image with shape: {sasImg.shape}")
+print(f"Successfully loaded image with shape: {tsRaw.shape}")
 
 # Load the complete set of data and pre-process the time series
 # Here the raw acoustic data, along with all of the non-acoustic parameters
@@ -102,8 +99,9 @@ normFlag = 1  # flag to apply 30*log10(r) range normalization to the imagery
 dynamicRange = 35  # dynamic range to display in the image, dB
 
 # Reconstruct imagery one channel (one microphone) at a time
-backscatter_img = []
-for m in range(len(chanSelect)):
+backprojectionImg = []
+#for m in range(len(chanSelect)):
+for m in range(1):  # for testing, only reconstruct channel 1
     # pass the image reconstruction parameters to the data structure
     A[m].Results.Bp.xVect = np.arange(along_track[0], along_track[1] + dx, dx)
     A[m].Results.Bp.yVect = np.arange(cross_track[0], cross_track[1] + dy, dy)
@@ -111,11 +109,11 @@ for m in range(len(chanSelect)):
     A[m].Results.Bp.fov = fov
     
     # reconstruct the imagery
-    backscatter_img.append(reconstructImage(A[m], resampling_ratio, img_plane, fov))
+    backprojectionImg.append(reconstructImage(A[m], resampling_ratio, img_plane, fov))
     print(f'Backprojection of Channel {chanSelect[m]} Complete')
     
     # plot the reconstructed imagery
     plt.figure(figsize=(12, 4))  # width=12 inches, height=4 inches
-    plotSasImage(backscatter_img[m], dynamicRange, normFlag, output_dir, filename, chanSelect, m)
+    plotSasImage(backprojectionImg[m], dynamicRange, normFlag, output_dir, filename, chanSelect, m)
     
     #plt.show()
