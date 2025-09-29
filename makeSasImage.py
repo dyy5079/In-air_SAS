@@ -68,7 +68,7 @@ plt.yticks(np.arange(yVec[0].item(), yVec[-1].item(), 0.2))  # Y-axis ticks ever
 #plt.gca().invert_xaxis()  # 0 at right for x-axis
 
 #plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{loadCh}.png'), dpi=300, bbox_inches='tight')
-#plt.show()
+plt.show()
 
 print("Loading and plotting basic SAS image...")
 
@@ -94,7 +94,7 @@ resampling_ratio = 10  # upsampling ratio prior to nearest neighbor interpolatio
 fov = 120  # field of view from the transmitter to the pixel to include in the integration, degrees
 
 # Define plotting parameters for displaying the imagery
-normFlag = 1  # flag to apply 30*log10(r) range normalization to the imagery 
+normFlag = 0  # flag to apply 30*log10(r) range normalization to the imagery 
               # (1 = normalization on, 0 = normalization off)
 dynamicRange = 35  # dynamic range to display in the image, dB
 
@@ -116,4 +116,4 @@ for m in range(1):  # for testing, only reconstruct channel 1
     plt.figure(figsize=(12, 4))  # width=12 inches, height=4 inches
     plotSasImage(backprojectionImg[m], dynamicRange, normFlag, output_dir, filename, chanSelect, m)
     
-    #plt.show()
+    plt.show()

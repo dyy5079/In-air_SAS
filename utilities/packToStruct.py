@@ -144,10 +144,13 @@ def packToStruct(folder, filename, chanSelect, cSelect):
     for i in range(len(A)):
         A[i].Wfm = wfm  # Remove .copy() as it may not be available
 
+
+    
     # Pack the time series data
     for n in range(len(A)):  # Changed from range(1, len(A)) to range(len(A))
         with h5py.File(dPath, 'r') as f:
             A[n].Data.tsRaw = np.array(f[f"/ch{chanSelect[n]}/ts"])
+        A[n].Data.tsRaw = A[n].Data.tsRaw.T
         A[n].Data.tsRC = A[n].Data.tsRaw.copy()
         A[n].Data.tsRC -= np.mean(A[n].Data.tsRC)
         A[n] = removeGroupDelay(A[n])
