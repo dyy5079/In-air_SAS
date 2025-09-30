@@ -38,7 +38,8 @@ def reconstructImage(A, r, img_plane, fov):
     Xs, Ys = np.meshgrid(x, y)
 
     # Backprojection (delay and sum)
-    for ping in range(n_pings):
+    #for ping in range(n_pings):
+    for ping in range(1):
         # A.Params.position has shape (1, 1001), so we access [0, ping] to get the ping-th position
         # Progress tracking to detect infinite loops
         if ping % 100 == 0:  # Print every 100 iterations
@@ -60,17 +61,18 @@ def reconstructImage(A, r, img_plane, fov):
 
         # Nearest neighbor interpolation
         time_indices = np.round(distMtx / c[ping] * fs * r).astype(int)
-        times = np.clip(time_indices, 0, recording_scope - 1)
+        times = np.minimum(time_indices, recording_scope-1)
 
         # Isolate the ping
         p_data = data[:, ping]
+        print(p_data.shape)
         ping_contributions = p_data[times]
 
         # Mask out-of-scope and out-of-FOV values
         ping_contributions = ping_contributions * (time_indices < recording_scope) * (np.abs(thetaMtx) < fov / 2)
 
         # Accumulate energy
-        img += ping_contributions
+        img = img + ping_contributions
 
     # Pass the image to the data structure
     A.Results.Bp.image = img
