@@ -106,7 +106,9 @@ def packToStruct(folder, filename, chanSelect, cSelect):
     if isfile := os.path.isfile(os.path.join(folder, "characterization data", "acquisitionParams.csv")):
         print(f"Loading acquisition parameters from {os.path.join(folder, 'characterization data', 'acquisitionParams.csv')}")
         daqParams = pd.read_csv(os.path.join(folder, "characterization data", "acquisitionParams.csv"))
-
+    elif isfile := os.path.isfile(os.path.join(folder, "characterization data", "acquistionParams.csv")):
+        print(f"Loading acquisition parameters from {os.path.join(folder, 'characterization data', 'acquistionParams.csv')}")
+        daqParams = pd.read_csv(os.path.join(folder, "characterization data", "acquistionParams.csv"))
     else:
         print(f"Error: acquisitionParams.csv not found in {os.path.join(folder, 'characterization data')}")
         exit()
