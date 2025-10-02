@@ -65,7 +65,6 @@ def reconstructImage(A, r, img_plane, fov):
 
         # Isolate the ping
         p_data = data[:, ping]
-        print(p_data.shape)
         ping_contributions = p_data[times]
 
         # Mask out-of-scope and out-of-FOV values
