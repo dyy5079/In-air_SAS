@@ -147,12 +147,17 @@ def packToStruct(folder, filename, chanSelect, cSelect):
 
     
     # Pack the time series data
-    for n in range(len(A)):  # Changed from range(1, len(A)) to range(len(A))
+    #for n in range(len(A)):  # Changed from range(1, len(A)) to range(len(A))
+    for n in range(1):
         with h5py.File(dPath, 'r') as f:
             A[n].Data.tsRaw = np.array(f[f"/ch{chanSelect[n]}/ts"])
         A[n].Data.tsRC = A[n].Data.tsRaw.copy()
         A[n].Data.tsRC = A[n].Data.tsRC.T
+        if n == 0:
+            print("tsRC after Transpose: ",A[0].Data.tsRC[0])
         A[n].Data.tsRC -= np.mean(A[n].Data.tsRC)
+        if n == 0:
+            print("tsRC after mean Removal: ",A[0].Data.tsRC[0])
         A[n] = removeGroupDelay(A[n])
         A[n] = txBlanker(A[n])
         bandEdge = min([A[n].Wfm.fStart, A[n].Wfm.fStop])  # Changed from dictionary access to attribute access
@@ -161,7 +166,9 @@ def packToStruct(folder, filename, chanSelect, cSelect):
             A[n].Data.tsRC = lfilter(b, 1, A[n].Data.tsRC)
             A[n].Data.tsRC = np.roll(A[n].Data.tsRC, -int((len(b)-1)/2), axis=0)
         A[n].Data.tsRC = mfilt(A[n].Data.tsRC, A[n].Wfm.pulseReplica)
-        # Take the real part after matched filtering to get real-valued output
-        A[n].Data.tsRC = np.real(A[n].Data.tsRC)
+        if n == 0:
+            print("tsRC after Matched Filtering: ",A[0].Data.tsRC[0])
+        #Take the real part after matched filtering to get real-valued output
+        #A[n].Data.tsRC = np.real(A[n].Data.tsRC)
     return A
 

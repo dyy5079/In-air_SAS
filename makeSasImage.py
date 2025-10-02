@@ -116,4 +116,4 @@ for m in range(1):  # for testing, only reconstruct channel 1
     plt.figure(figsize=(12, 4))  # width=12 inches, height=4 inches
     plotSasImage(backprojectionImg[m], dynamicRange, normFlag, output_dir, filename, chanSelect, m)
     
-    plt.show()
+    #plt.show()
