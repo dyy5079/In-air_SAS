@@ -62,20 +62,20 @@ def mfilt(data, pulseReplica):
     return data
 
 def removeGroupDelay(A):
-    data = np.fft.fft(A.Data.tsRC, axis=0)
-    nT = data.shape[0]
+    data = np.fft.fft(A.Data.tsRC, axis=1)  # new line
+    nT = data.shape[1]  # new line
 
     freqVec = freqVecGen(nT, A.Params.fs)
     groupDelay_s = A.Hardware.groupDelay / A.Params.fs
 
     delayRamp = np.exp(1j * 2 * np.pi * freqVec * groupDelay_s)
-    if nT % 2 == 0:
-        delayRamp[nT // 2] = np.real(delayRamp[nT // 2])
+    if freqVec.ndim == 1:
+        delayRamp = delayRamp.reshape(1, -1)  # new line
     
-    # Reshape delayRamp to be compatible with 2D data
-    delayRamp = delayRamp.reshape(-1, 1)
+    if nT % 2 == 0:
+        delayRamp[0, nT // 2] = np.real(delayRamp[0, nT // 2])  # new line
 
-    A.Data.tsRC = np.fft.ifft(data * delayRamp, axis=0)
+    A.Data.tsRC = np.fft.ifft(data * delayRamp, axis=1)  # new line
     return A
 
 def txBlanker(A):
@@ -84,10 +84,10 @@ def txBlanker(A):
         raise ValueError('PP_AIRSAS: Pulse length not an integer sample length')
     blankLength = pulseReplicaLength
     blanker = np.ones(A.Data.tsRC.shape)
-    blanker[:blankLength] = 0
-    blanker[blankLength:blankLength + pulseReplicaLength, :] = (
+    blanker[:, :blankLength] = 0  # Remove first few columns instead of rows
+    blanker[:, blankLength:blankLength + pulseReplicaLength] = (
         (np.sin(np.linspace(-np.pi/2, np.pi/2, pulseReplicaLength)) + 1) / 2
-    ).reshape(-1, 1)
+    )
     A.Data.tsRC = A.Data.tsRC * blanker
     return A
 
@@ -174,7 +174,7 @@ def packToStruct(folder, filename, chanSelect, cSelect):
         plt.gca().invert_yaxis()
 
         A[n] = removeGroupDelay(A[n])
-        A[n] = txBlanker(A[n])
+        #A[n] = txBlanker(A[n])
         plt.subplot(2, 2, 3)
         plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
         plt.title('After Blanking and removedelay')
