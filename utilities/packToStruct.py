@@ -2,12 +2,17 @@ import numpy as np
 import h5py
 import pandas as pd
 import os
-from scipy.signal import hilbert, firwin, lfilter, remez
+from scipy.signal import hilbert, lfilter, remez
 from scipy.signal.windows import tukey
+
 from .initStruct import initStruct, singleEmptyStruct
 from .getAirSpeed import getAirSpeed
 from .genLfm import genLfm
 from .freqVecGen import freqVecGen
+
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from .sasColormap import sasColormap
 
 class P:
     def __init__(self):
@@ -149,28 +154,47 @@ def packToStruct(folder, filename, chanSelect, cSelect):
 
     
     # Pack the time series data
-    #for n in range(len(A)):  # Changed from range(1, len(A)) to range(len(A))
+    #for n in range(len(chanSelect)):
     for n in range(1):
         with h5py.File(dPath, 'r') as f:
             A[n].Data.tsRaw = np.array(f[f"/ch{chanSelect[n]}/ts"])
         A[n].Data.tsRC = A[n].Data.tsRaw.copy()
-        A[n].Data.tsRC = A[n].Data.tsRC.T
-        if n == 0:
-            print("tsRC after Transpose: ",A[0].Data.tsRC[0])
+        plt.subplot(2, 2, 1)
+        plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
+        h = plt.colorbar()
+        plt.title('Original')
+        plt.gca().invert_yaxis()
+
         A[n].Data.tsRC -= np.mean(A[n].Data.tsRC)
-        if n == 0:
-            print("tsRC after mean Removal: ",A[0].Data.tsRC[0])
+        
+        plt.subplot(2, 2, 2)
+        plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
+        h = plt.colorbar()
+        plt.title('After Mean Removal')
+        plt.gca().invert_yaxis()
+
         A[n] = removeGroupDelay(A[n])
         A[n] = txBlanker(A[n])
+        plt.subplot(2, 2, 3)
+        plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
+        plt.title('After Blanking and removedelay')
+        h = plt.colorbar()
+        plt.gca().invert_yaxis()
+        
         bandEdge = min([A[n].Wfm.fStart, A[n].Wfm.fStop])  # Changed from dictionary access to attribute access
         if bandEdge >= 5e3:
             b = AirsasHpf(bandEdge-2e3, bandEdge, A[n].Params.fs)
             A[n].Data.tsRC = lfilter(b, 1, A[n].Data.tsRC)
             A[n].Data.tsRC = np.roll(A[n].Data.tsRC, -int((len(b)-1)/2), axis=0)
         A[n].Data.tsRC = mfilt(A[n].Data.tsRC, A[n].Wfm.pulseReplica)
-        if n == 0:
-            print("tsRC after Matched Filtering: ",A[0].Data.tsRC[0])
-        #Take the real part after matched filtering to get real-valued output
-        #A[n].Data.tsRC = np.real(A[n].Data.tsRC)
+
+        plt.subplot(2, 2, 4)
+        plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
+        plt.title('After Matched Filter')
+        h = plt.colorbar()
+        plt.gca().invert_yaxis()
+        
+        plt.tight_layout()
+        plt.show()
     return A
 
