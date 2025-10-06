@@ -27,23 +27,30 @@ class P:
 def AirsasHpf(filterStop, filterPass, fs):
     Dstop = 0.01
     Dpass = 0.005756
-
+    # Dpass = 0.0057563991496
+    print("fs:", fs)
     nyq = fs / 2.0
     bands = [0, filterStop, filterPass, nyq]
+    # bands = [0, (filterStop/nyq), (filterPass/nyq), 2.0]
     desired = [0, 1]
     weights = [Dstop, Dpass]
 
-    numtaps = 101
+    numtaps = 107
 
     b = remez(numtaps, bands, desired, weight=weights, fs=fs)
+    # b = remez(numtaps, bands, desired, weight=weights, fs=2.0)
+    print("b:", b.shape)
+
     return b
+
+# This subfunction replica correlates the data with the transmitted
+# waveform to perform pulse compression.  The resulting data is output as a
+# complex-valued timeseries.
 
 
 def mfilt(data, pulseReplica):
-    # Only apply Hilbert transform if data is real
-    if np.isrealobj(data):
-        data = hilbert(data)
-    # If data is already complex, use it as-is
+    
+    data = hilbert(data)    # use the hilbert transform to produce an analytic (complex-valued) version of the signal
 
     nPtsData = data.shape[0]
     nPtsMfk = len(pulseReplica)
@@ -61,34 +68,39 @@ def mfilt(data, pulseReplica):
     data = data[:nPtsData, :]
     return data
 
+# This sub-function removes the the group delay of the data acquisition
+# system. It ensures that real input data results in real output data.
 def removeGroupDelay(A):
-    data = np.fft.fft(A.Data.tsRC, axis=1)  # new line
-    nT = data.shape[1]  # new line
+    data = np.fft.fft(A.Data.tsRC, axis=0)
+    nT = data.shape[0]
 
-    freqVec = freqVecGen(nT, A.Params.fs)
+    freqVec = freqVecGen(nT, A.Params.fs).T
     groupDelay_s = A.Hardware.groupDelay / A.Params.fs
 
     delayRamp = np.exp(1j * 2 * np.pi * freqVec * groupDelay_s)
-    if freqVec.ndim == 1:
-        delayRamp = delayRamp.reshape(1, -1)  # new line
     
     if nT % 2 == 0:
-        delayRamp[0, nT // 2] = np.real(delayRamp[0, nT // 2])  # new line
-
-    A.Data.tsRC = np.fft.ifft(data * delayRamp, axis=1)  # new line
+        nTbi = nT/2
+        delayRamp[(nT // 2)] = np.real(delayRamp[(nT // 2)])
+        delayRamp = delayRamp.reshape(-1, 1)                        # Reshape delayRamp to be a column vector
+    A.Data.tsRC = np.fft.ifft(np.multiply(data, delayRamp), axis=0)
     return A
 
+# This subfunction zeros out ("blanks") the portion of the received waveforms that
+# correspond to when the transmitter was emitting the pulse.
 def txBlanker(A):
+    
     pulseReplicaLength = int(A.Wfm.pulseLength * A.Params.fs)
+    
     if pulseReplicaLength % 1 != 0:
         raise ValueError('PP_AIRSAS: Pulse length not an integer sample length')
+    
     blankLength = pulseReplicaLength
-    blanker = np.ones(A.Data.tsRC.shape)
-    blanker[:, :blankLength] = 0  # Remove first few columns instead of rows
-    blanker[:, blankLength:blankLength + pulseReplicaLength] = (
-        (np.sin(np.linspace(-np.pi/2, np.pi/2, pulseReplicaLength)) + 1) / 2
-    )
-    A.Data.tsRC = A.Data.tsRC * blanker
+
+    blanker = np.ones((A.Data.tsRC.shape[0], 1))
+    blanker[:blankLength, 0] = 0  # Set first blankLength rows to 0
+    blanker[blankLength:blankLength + pulseReplicaLength, 0] = (np.sin(np.linspace(-np.pi/2, np.pi/2, pulseReplicaLength)) + 1) / 2
+    A.Data.tsRC = np.multiply(A.Data.tsRC, blanker)
     return A
 
 
@@ -156,15 +168,18 @@ def packToStruct(folder, filename, chanSelect, cSelect):
     # Pack the time series data
     #for n in range(len(chanSelect)):
     for n in range(1):
+        plt.figure()
         with h5py.File(dPath, 'r') as f:
             A[n].Data.tsRaw = np.array(f[f"/ch{chanSelect[n]}/ts"])
         A[n].Data.tsRC = A[n].Data.tsRaw.copy()
+        A[n].Data.tsRC = A[n].Data.tsRC.T
         plt.subplot(2, 2, 1)
         plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
         h = plt.colorbar()
         plt.title('Original')
         plt.gca().invert_yaxis()
 
+        # Remove the DC bias
         A[n].Data.tsRC -= np.mean(A[n].Data.tsRC)
         
         plt.subplot(2, 2, 2)
@@ -173,15 +188,20 @@ def packToStruct(folder, filename, chanSelect, cSelect):
         plt.title('After Mean Removal')
         plt.gca().invert_yaxis()
 
+        # Remove the group delay of the acquisition system
         A[n] = removeGroupDelay(A[n])
-        #A[n] = txBlanker(A[n])
+
+        # Remove the direct path transmission from speaker to microphone
+        A[n] = txBlanker(A[n])
         plt.subplot(2, 2, 3)
         plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
         plt.title('After Blanking and removedelay')
         h = plt.colorbar()
         plt.gca().invert_yaxis()
         
+        # Apply a bandpass filter
         bandEdge = min([A[n].Wfm.fStart, A[n].Wfm.fStop])  # Changed from dictionary access to attribute access
+        print("bandEdge:", bandEdge)
         if bandEdge >= 5e3:
             b = AirsasHpf(bandEdge-2e3, bandEdge, A[n].Params.fs)
             A[n].Data.tsRC = lfilter(b, 1, A[n].Data.tsRC)
@@ -195,6 +215,7 @@ def packToStruct(folder, filename, chanSelect, cSelect):
         plt.gca().invert_yaxis()
         
         plt.tight_layout()
-        plt.show()
+        plt.savefig("BeforeAfterPlot", dpi=300, bbox_inches='tight')
+        #plt.show()
     return A
 

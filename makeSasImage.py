@@ -13,7 +13,7 @@ from matplotlib.colors import ListedColormap
 # Setup the paths to the data file and code repository for processing and analysis
 
 # Specify the path to the code repository
-basePath = ''
+basePath = '/home/In-air_SAS'  # path to the In-air_SAS repository
 if basePath == '':
     basePath = os.getcwd()
 sys.path.append(os.path.join(basePath, 'utilities'))    #add the utilities folder 
@@ -67,8 +67,8 @@ plt.yticks(np.arange(yVec[0].item(), yVec[-1].item(), 0.2))  # Y-axis ticks ever
 #plt.gca().invert_yaxis()  # 0 at top for y-axis
 #plt.gca().invert_xaxis()  # 0 at right for x-axis
 
-#plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{loadCh}.png'), dpi=300, bbox_inches='tight')
-plt.show()
+plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{loadCh}.png'), dpi=300, bbox_inches='tight')
+#plt.show()
 
 print("Loading and plotting basic SAS image...")
 
