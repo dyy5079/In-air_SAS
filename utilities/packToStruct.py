@@ -52,7 +52,7 @@ def AirsasHpf(filterStop, filterPass, fs):
 # waveform to perform pulse compression.  The resulting data is output as a
 # complex-valued timeseries.
 
-def hilbert_matlab_style(x):
+def hilbert_matlab(x):
     """
     The hilbert function used by python differes too greatly compared to MATLAB to the point that it affects results given by mfilt()
     In order to compensate, a custom function is written to replicate MATLAB's hilbert function exactly.
@@ -94,7 +94,8 @@ def hilbert_matlab_style(x):
 
 def mfilt(data, pulseReplica):
     
-    data = hilbert_matlab_style(np.real(data))    # Use the custom hilbert function to replicate MATLAB's behavior
+    data = hilbert_matlab(np.real(data))    # Use the custom hilbert function to replicate MATLAB's behavior
+    #data = hilbert(np.real(data), axis=0)  # Use scipy's hilbert function along axis 0
     nPtsData = data.shape[0]
     nPtsMfk = len(pulseReplica)
 
@@ -210,8 +211,8 @@ def packToStruct(folder, filename, chanSelect, cSelect):
     
     # Pack the time series data
     for n in range(len(chanSelect)):
-#    for n in range(1):
-        plt.figure()
+    #for n in range(1):
+        #plt.figure()
         with h5py.File(dPath, 'r') as f:
             A[n].Data.tsRaw = np.array(f[f"/ch{chanSelect[n]}/ts"])
         A[n].Data.tsRC = A[n].Data.tsRaw.copy()
