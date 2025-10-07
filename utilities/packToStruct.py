@@ -54,7 +54,7 @@ def AirsasHpf(filterStop, filterPass, fs):
 
 def hilbert_matlab(x):
     """
-    The hilbert function used by python differes too greatly compared to MATLAB to the point that it affects results given by mfilt()
+    The hilbert function used by Python differs too greatly compared to MATLAB to the point that it affects the results given by mfilt()
     In order to compensate, a custom function is written to replicate MATLAB's hilbert function exactly.
     """
     x = np.asarray(x)
@@ -64,7 +64,7 @@ def hilbert_matlab(x):
     if x.ndim == 2:
         result = np.zeros(x.shape, dtype=complex)
         for col in range(x.shape[1]):
-            result[:, col] = hilbert_matlab_style(x[:, col])
+            result[:, col] = hilbert_matlab(x[:, col])
         return result
     
     # 1D case
