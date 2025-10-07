@@ -4,6 +4,7 @@ import pandas as pd
 import os
 from scipy.signal import hilbert, lfilter, remez
 from scipy.signal.windows import tukey
+from scipy.signal import kaiserord
 
 from .initStruct import initStruct, singleEmptyStruct
 from .getAirSpeed import getAirSpeed
@@ -28,30 +29,72 @@ def AirsasHpf(filterStop, filterPass, fs):
     Dstop = 0.01
     Dpass = 0.005756
     # Dpass = 0.0057563991496
-    print("fs:", fs)
-    nyq = fs / 2.0
-    bands = [0, filterStop, filterPass, nyq]
-    # bands = [0, (filterStop/nyq), (filterPass/nyq), 2.0]
-    desired = [0, 1]
-    weights = [Dstop, Dpass]
+    # normalizedFilterStop = filterStop / (fs / 2.0)
+    # normalizedFilterPass = filterPass / (fs / 2.0)
 
-    numtaps = 107
+    #bands = [0, (filterStop/(fs/2.0)), (filterPass/(fs/2.0)), 2.0]
+    # weights = [Dstop, Dpass]
 
-    b = remez(numtaps, bands, desired, weight=weights, fs=fs)
     # b = remez(numtaps, bands, desired, weight=weights, fs=2.0)
-    print("b:", b.shape)
-
+    
+    # Convert to remez parameters
+    nyq = fs / 2.0  # new line
+    bands = [0, filterStop, filterPass, nyq]  # new line
+    desired = [0, 1]  # new line
+    weights = [1/Dstop, 1/Dpass]  # new line
+    N = 107
+    b = remez(N, bands, desired, weight=weights, fs=fs)  # new line
+    
+    
     return b
 
 # This subfunction replica correlates the data with the transmitted
 # waveform to perform pulse compression.  The resulting data is output as a
 # complex-valued timeseries.
 
+def hilbert_matlab_style(x):
+    """
+    The hilbert function used by python differes too greatly compared to MATLAB to the point that it affects results given by mfilt()
+    In order to compensate, a custom function is written to replicate MATLAB's hilbert function exactly.
+    """
+    x = np.asarray(x)
+    original_shape = x.shape
+    
+    # Handle 2D arrays by processing along axis 0
+    if x.ndim == 2:
+        result = np.zeros(x.shape, dtype=complex)
+        for col in range(x.shape[1]):
+            result[:, col] = hilbert_matlab_style(x[:, col])
+        return result
+    
+    # 1D case
+    x = x.flatten()
+    N = len(x)
+    
+    # Take FFT
+    X = np.fft.fft(x)
+    
+    # Create frequency domain multiplier
+    h = np.zeros(N)
+    if N % 2 == 0:  # Even length
+        h[0] = 1              # DC
+        h[1:N//2] = 2         # Positive frequencies
+        h[N//2] = 1           # Nyquist
+        # Negative frequencies remain 0
+    else:  # Odd length
+        h[0] = 1              # DC
+        h[1:(N+1)//2] = 2     # Positive frequencies
+        # Negative frequencies remain 0
+    
+    # Apply multiplier and take IFFT
+    y = np.fft.ifft(X * h)
+    
+    return y.reshape(original_shape)
+
 
 def mfilt(data, pulseReplica):
     
-    data = hilbert(data)    # use the hilbert transform to produce an analytic (complex-valued) version of the signal
-
+    data = hilbert_matlab_style(np.real(data))    # Use the custom hilbert function to replicate MATLAB's behavior
     nPtsData = data.shape[0]
     nPtsMfk = len(pulseReplica)
 
@@ -80,10 +123,10 @@ def removeGroupDelay(A):
     delayRamp = np.exp(1j * 2 * np.pi * freqVec * groupDelay_s)
     
     if nT % 2 == 0:
-        nTbi = nT/2
         delayRamp[(nT // 2)] = np.real(delayRamp[(nT // 2)])
-        delayRamp = delayRamp.reshape(-1, 1)                        # Reshape delayRamp to be a column vector
-    A.Data.tsRC = np.fft.ifft(np.multiply(data, delayRamp), axis=0)
+    delayRamp = delayRamp.reshape(-1, 1)                        # Reshape delayRamp to be a column vector
+    A.Data.tsRC = np.real(np.fft.ifft(data * delayRamp, axis=0))
+
     return A
 
 # This subfunction zeros out ("blanks") the portion of the received waveforms that
@@ -166,56 +209,61 @@ def packToStruct(folder, filename, chanSelect, cSelect):
 
     
     # Pack the time series data
-    #for n in range(len(chanSelect)):
-    for n in range(1):
+    for n in range(len(chanSelect)):
+#    for n in range(1):
         plt.figure()
         with h5py.File(dPath, 'r') as f:
             A[n].Data.tsRaw = np.array(f[f"/ch{chanSelect[n]}/ts"])
         A[n].Data.tsRC = A[n].Data.tsRaw.copy()
         A[n].Data.tsRC = A[n].Data.tsRC.T
-        plt.subplot(2, 2, 1)
-        plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
-        h = plt.colorbar()
-        plt.title('Original')
-        plt.gca().invert_yaxis()
-
-        # Remove the DC bias
-        A[n].Data.tsRC -= np.mean(A[n].Data.tsRC)
         
-        plt.subplot(2, 2, 2)
-        plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
-        h = plt.colorbar()
-        plt.title('After Mean Removal')
-        plt.gca().invert_yaxis()
+        # plt.subplot(2, 2, 1)
+        # plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
+        # h = plt.colorbar()
+        # plt.title('Original')
+        # plt.gca().invert_yaxis()
+
+        # make sure to remove the mean from each ping separately
+        # remove DC bias from each individual ping rather than a global DC offset.
+        A[n].Data.tsRC = A[n].Data.tsRC - np.mean(A[n].Data.tsRC, axis=0, keepdims=True)
+        
+        # plt.subplot(2, 2, 2)
+        # plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
+        # h = plt.colorbar()
+        # plt.title('After Mean Removal')
+        # plt.gca().invert_yaxis()
 
         # Remove the group delay of the acquisition system
         A[n] = removeGroupDelay(A[n])
 
         # Remove the direct path transmission from speaker to microphone
         A[n] = txBlanker(A[n])
-        plt.subplot(2, 2, 3)
-        plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
-        plt.title('After Blanking and removedelay')
-        h = plt.colorbar()
-        plt.gca().invert_yaxis()
+
+        # plt.subplot(2, 2, 3)
+        # plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
+        # plt.title('After Blanking and removedelay')
+        # h = plt.colorbar()
+        # plt.gca().invert_yaxis()
         
         # Apply a bandpass filter
         bandEdge = min([A[n].Wfm.fStart, A[n].Wfm.fStop])  # Changed from dictionary access to attribute access
-        print("bandEdge:", bandEdge)
         if bandEdge >= 5e3:
             b = AirsasHpf(bandEdge-2e3, bandEdge, A[n].Params.fs)
-            A[n].Data.tsRC = lfilter(b, 1, A[n].Data.tsRC)
+            A[n].Data.tsRC = lfilter(b, 1, A[n].Data.tsRC, axis=0)
             A[n].Data.tsRC = np.roll(A[n].Data.tsRC, -int((len(b)-1)/2), axis=0)
+        
         A[n].Data.tsRC = mfilt(A[n].Data.tsRC, A[n].Wfm.pulseReplica)
 
-        plt.subplot(2, 2, 4)
-        plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12), aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
-        plt.title('After Matched Filter')
-        h = plt.colorbar()
-        plt.gca().invert_yaxis()
+        # plt.subplot(2, 2, 4)
+        # plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
+        # plt.title('After filter')
+        # h = plt.colorbar()
+        # plt.gca().invert_yaxis()
+
+
         
-        plt.tight_layout()
-        plt.savefig("BeforeAfterPlot", dpi=300, bbox_inches='tight')
-        #plt.show()
+        # plt.tight_layout()
+        # #plt.savefig("BeforeAfterPlot", dpi=300, bbox_inches='tight')
+        # plt.show()
     return A
 
