@@ -38,8 +38,8 @@ def reconstructImage(A, r, img_plane, fov):
     Xs, Ys = np.meshgrid(x, y)
 
     # Backprojection (delay and sum)
-    #for ping in range(n_pings):
-    for ping in range(1):
+    for ping in range(n_pings):
+    #for ping in range(1):
         # A.Params.position has shape (1, 1001), so we access [0, ping] to get the ping-th position
         # Progress tracking to detect infinite loops
         if ping % 100 == 0:  # Print every 100 iterations

@@ -13,7 +13,7 @@ from matplotlib.colors import ListedColormap
 # Setup the paths to the data file and code repository for processing and analysis
 
 # Specify the path to the code repository
-basePath = '/home/In-air_SAS'  # path to the In-air_SAS repository
+basePath = ''  # path to the In-air_SAS repository
 if basePath == '':
     basePath = os.getcwd()
 sys.path.append(os.path.join(basePath, 'utilities'))    #add the utilities folder 
