@@ -39,11 +39,12 @@ def plotSasImage(A, dynamicRange, normFlag=None, output_dir='output_plots', file
     plt.xlabel('Along Track (m)')
     plt.ylabel('Cross Track (m)')
     plt.axis('image')
+    plt.title(f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection')
     h = plt.colorbar()
     if normFlag:
         h.set_label('Amplitude (dB re: 1V @ 1m)')
     else:
         h.set_label('Amplitude (dB re: 1V)')
     plt.gca().invert_yaxis()  # 0 at top for y-axis
-    plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection_ch{m}.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection.png'), dpi=300, bbox_inches='tight')
     #plt.show()
