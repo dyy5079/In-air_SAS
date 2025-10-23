@@ -94,7 +94,7 @@ resampling_ratio = 10  # upsampling ratio prior to nearest neighbor interpolatio
 fov = 120  # field of view from the transmitter to the pixel to include in the integration, degrees
 
 # Define plotting parameters for displaying the imagery
-normFlag = 1  # flag to apply 30*log10(r) range normalization to the imagery 
+normFlag = 0  # flag to apply 30*log10(r) range normalization to the imagery 
               # (1 = normalization on, 0 = normalization off)
 dynamicRange = 35  # dynamic range to display in the image, dB
 
