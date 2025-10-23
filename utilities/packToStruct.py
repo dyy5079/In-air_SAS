@@ -52,50 +52,11 @@ def AirsasHpf(filterStop, filterPass, fs):
 # waveform to perform pulse compression.  The resulting data is output as a
 # complex-valued timeseries.
 
-def hilbert_matlab(x):
-    """
-    The hilbert function used by Python differs too greatly compared to MATLAB to the point that it affects the results given by mfilt()
-    In order to compensate, a custom function is written to replicate MATLAB's hilbert function exactly.
-    """
-    x = np.asarray(x)
-    original_shape = x.shape
-    
-    # Handle 2D arrays by processing along axis 0
-    if x.ndim == 2:
-        result = np.zeros(x.shape, dtype=complex)
-        for col in range(x.shape[1]):
-            result[:, col] = hilbert_matlab(x[:, col])
-        return result
-    
-    # 1D case
-    x = x.flatten()
-    N = len(x)
-    
-    # Take FFT
-    X = np.fft.fft(x)
-    
-    # Create frequency domain multiplier
-    h = np.zeros(N)
-    if N % 2 == 0:  # Even length
-        h[0] = 1              # DC
-        h[1:N//2] = 2         # Positive frequencies
-        h[N//2] = 1           # Nyquist
-        # Negative frequencies remain 0
-    else:  # Odd length
-        h[0] = 1              # DC
-        h[1:(N+1)//2] = 2     # Positive frequencies
-        # Negative frequencies remain 0
-    
-    # Apply multiplier and take IFFT
-    y = np.fft.ifft(X * h)
-    
-    return y.reshape(original_shape)
-
-
 def mfilt(data, pulseReplica):
     
-    data = hilbert_matlab(np.real(data))    # Use the custom hilbert function to replicate MATLAB's behavior
-    #data = hilbert(np.real(data), axis=0)  # Use scipy's hilbert function along axis 0
+    #data = hilbert_matlab(np.real(data))    # Use the custom hilbert function to replicate MATLAB's behavior
+    data = hilbert(data, axis=0)  # Use scipy's hilbert function along axis 0
+
     nPtsData = data.shape[0]
     nPtsMfk = len(pulseReplica)
 
@@ -146,8 +107,6 @@ def txBlanker(A):
     blanker[blankLength:blankLength + pulseReplicaLength, 0] = (np.sin(np.linspace(-np.pi/2, np.pi/2, pulseReplicaLength)) + 1) / 2
     A.Data.tsRC = np.multiply(A.Data.tsRC, blanker)
     return A
-
-
 
 def packToStruct(folder, filename, chanSelect, cSelect):
     # Pre-populate the data structure
@@ -212,40 +171,60 @@ def packToStruct(folder, filename, chanSelect, cSelect):
     # Pack the time series data
     for n in range(len(chanSelect)):
     #for n in range(1):
-        #plt.figure()
         with h5py.File(dPath, 'r') as f:
             A[n].Data.tsRaw = np.array(f[f"/ch{chanSelect[n]}/ts"])
         A[n].Data.tsRC = A[n].Data.tsRaw.copy()
         A[n].Data.tsRC = A[n].Data.tsRC.T
         
-        # plt.subplot(2, 2, 1)
-        # plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
-        # h = plt.colorbar()
-        # plt.title('Original')
-        # plt.gca().invert_yaxis()
-
+        if n == 1:
+            plt.figure()
+            plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()), vmin=-60, vmax=0)
+            h = plt.colorbar()
+            h.set_label('Amplitude dB')
+            plt.xlabel('Samples')
+            plt.ylabel('Pings')
+            plt.title('Original(tsRaw)')
+            plt.gca().invert_yaxis()
+            plt.show()
         # make sure to remove the mean from each ping separately
         # remove DC bias from each individual ping rather than a global DC offset.
         A[n].Data.tsRC = A[n].Data.tsRC - np.mean(A[n].Data.tsRC, axis=0, keepdims=True)
         
-        # plt.subplot(2, 2, 2)
-        # plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
-        # h = plt.colorbar()
-        # plt.title('After Mean Removal')
-        # plt.gca().invert_yaxis()
-
+        if n == 1:
+            plt.figure()
+            plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()), vmin=-60, vmax=0)
+            h = plt.colorbar()
+            h.set_label('Amplitude dB')
+            plt.xlabel('Samples')
+            plt.ylabel('Pings')
+            plt.title('After Mean Removal')
+            plt.gca().invert_yaxis()
+            plt.show()
         # Remove the group delay of the acquisition system
         A[n] = removeGroupDelay(A[n])
-
+        if n == 1:
+            plt.figure()
+            plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()), vmin=-60, vmax=0)
+            h = plt.colorbar()
+            h.set_label('Amplitude dB')
+            plt.xlabel('Samples')
+            plt.ylabel('Pings')
+            plt.title('After Group Delay Removal')
+            plt.gca().invert_yaxis()
+            plt.show()
         # Remove the direct path transmission from speaker to microphone
         A[n] = txBlanker(A[n])
 
-        # plt.subplot(2, 2, 3)
-        # plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
-        # plt.title('After Blanking and removedelay')
-        # h = plt.colorbar()
-        # plt.gca().invert_yaxis()
-        
+        if n == 1:
+            plt.figure()
+            plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()), vmin=-60, vmax=0)
+            h = plt.colorbar()
+            h.set_label('Amplitude dB')
+            plt.xlabel('Samples')
+            plt.ylabel('Pings')
+            plt.title('After Blanking')
+            plt.gca().invert_yaxis()
+            plt.show()
         # Apply a bandpass filter
         bandEdge = min([A[n].Wfm.fStart, A[n].Wfm.fStop])  # Changed from dictionary access to attribute access
         if bandEdge >= 5e3:
@@ -253,18 +232,31 @@ def packToStruct(folder, filename, chanSelect, cSelect):
             A[n].Data.tsRC = lfilter(b, 1, A[n].Data.tsRC, axis=0)
             A[n].Data.tsRC = np.roll(A[n].Data.tsRC, -int((len(b)-1)/2), axis=0)
         
+        if n == 1:
+            plt.figure()
+            plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()), vmin=-60, vmax=0)
+            h = plt.colorbar()
+            h.set_label('Amplitude dB')
+            plt.xlabel('Samples')
+            plt.ylabel('Pings')
+            plt.title('After Bandpass Filter')
+            plt.gca().invert_yaxis()
+            plt.show()
         A[n].Data.tsRC = mfilt(A[n].Data.tsRC, A[n].Wfm.pulseReplica)
 
-        # plt.subplot(2, 2, 4)
-        # plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()))
-        # plt.title('After filter')
-        # h = plt.colorbar()
-        # plt.gca().invert_yaxis()
-
-
+        if n == 1:
+            plt.figure()
+            plt.imshow(20 * np.log10(np.abs(A[n].Data.tsRC) + 1e-12).T, aspect='auto', origin='lower', cmap=ListedColormap(sasColormap()), vmin=-60, vmax=0)
+            h = plt.colorbar()
+            h.set_label('Amplitude dB')
+            plt.xlabel('Samples')
+            plt.ylabel('Pings')
+            plt.title('After Matched Filter')
+            plt.gca().invert_yaxis()
+            plt.show()
         
         # plt.tight_layout()
-        # #plt.savefig("BeforeAfterPlot", dpi=300, bbox_inches='tight')
+        # plt.savefig("BeforeAfterPlot", dpi=300, bbox_inches='tight')
         # plt.show()
     return A
 
