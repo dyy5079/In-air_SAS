@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import sys
 import os
 from utilities import packToStruct, reconstructImage, plotSasImage, sasColormap
+from cropTarget import cropTarget
+
 from matplotlib.colors import ListedColormap
 # Setup the paths to the data file and code repository for processing and analysis
 
@@ -68,12 +70,13 @@ plt.yticks(np.arange(yVec[0].item(), yVec[-1].item(), 0.2))  # Y-axis ticks ever
 #plt.gca().invert_xaxis()  # 0 at right for x-axis
 
 plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{loadCh}.png'), dpi=300, bbox_inches='tight')
-#plt.show()
+plt.show()
 
 print("Loading and plotting basic SAS image...")
 
 print(f"Successfully loaded image with shape: {tsRaw.shape}")
 
+cropTarget(tsRaw, xVec, yVec)
 # Load the complete set of data and pre-process the time series
 # Here the raw acoustic data, along with all of the non-acoustic parameters
 # are loaded and pre-processed

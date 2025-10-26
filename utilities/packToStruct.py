@@ -185,7 +185,6 @@ def packToStruct(folder, filename, chanSelect, cSelect):
             plt.ylabel('Pings')
             plt.title('Original(tsRaw)')
             plt.gca().invert_yaxis()
-            plt.show()
         # make sure to remove the mean from each ping separately
         # remove DC bias from each individual ping rather than a global DC offset.
         A[n].Data.tsRC = A[n].Data.tsRC - np.mean(A[n].Data.tsRC, axis=0, keepdims=True)
@@ -199,7 +198,6 @@ def packToStruct(folder, filename, chanSelect, cSelect):
             plt.ylabel('Pings')
             plt.title('After Mean Removal')
             plt.gca().invert_yaxis()
-            plt.show()
         # Remove the group delay of the acquisition system
         A[n] = removeGroupDelay(A[n])
         if n == 1:
@@ -211,7 +209,6 @@ def packToStruct(folder, filename, chanSelect, cSelect):
             plt.ylabel('Pings')
             plt.title('After Group Delay Removal')
             plt.gca().invert_yaxis()
-            plt.show()
         # Remove the direct path transmission from speaker to microphone
         A[n] = txBlanker(A[n])
 
@@ -224,7 +221,6 @@ def packToStruct(folder, filename, chanSelect, cSelect):
             plt.ylabel('Pings')
             plt.title('After Blanking')
             plt.gca().invert_yaxis()
-            plt.show()
         # Apply a bandpass filter
         bandEdge = min([A[n].Wfm.fStart, A[n].Wfm.fStop])  # Changed from dictionary access to attribute access
         if bandEdge >= 5e3:
@@ -241,7 +237,6 @@ def packToStruct(folder, filename, chanSelect, cSelect):
             plt.ylabel('Pings')
             plt.title('After Bandpass Filter')
             plt.gca().invert_yaxis()
-            plt.show()
         A[n].Data.tsRC = mfilt(A[n].Data.tsRC, A[n].Wfm.pulseReplica)
 
         if n == 1:
