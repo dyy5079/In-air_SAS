@@ -76,7 +76,7 @@ print("Loading and plotting basic SAS image...")
 
 print(f"Successfully loaded image with shape: {tsRaw.shape}")
 
-cropTarget(tsRaw, xVec, yVec)
+cropTarget(tsRaw, xVec, yVec, filename=filename)
 # Load the complete set of data and pre-process the time series
 # Here the raw acoustic data, along with all of the non-acoustic parameters
 # are loaded and pre-processed
@@ -97,7 +97,7 @@ resampling_ratio = 10  # upsampling ratio prior to nearest neighbor interpolatio
 fov = 120  # field of view from the transmitter to the pixel to include in the integration, degrees
 
 # Define plotting parameters for displaying the imagery
-normFlag = 0  # flag to apply 30*log10(r) range normalization to the imagery 
+normFlag = 1  # flag to apply 30*log10(r) range normalization to the imagery 
               # (1 = normalization on, 0 = normalization off)
 dynamicRange = 35  # dynamic range to display in the image, dB
 
@@ -119,4 +119,5 @@ for m in range(len(chanSelect)):
     plt.figure(figsize=(12, 4))  # width=12 inches, height=4 inches
     plotSasImage(backprojectionImg[m], dynamicRange, normFlag, output_dir, filename, chanSelect, m)
     #plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection_ch{m}.png'), dpi=300, bbox_inches='tight')
-    #plt.show()
+    plt.show()
+    cropTarget(backprojectionImg[m].Results.Bp.image, backprojectionImg[m].Results.Bp.xVect, backprojectionImg[m].Results.Bp.yVect, filename=filename)

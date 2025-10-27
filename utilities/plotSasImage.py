@@ -33,7 +33,7 @@ def plotSasImage(A, dynamicRange, normFlag=None, output_dir='output_plots', file
         cmap=ListedColormap(sasColormap())
     )
     plt.gca().invert_yaxis()
-    plt.gca().invert_xaxis()
+    # plt.gca().invert_xaxis()
     clim = [max(img.max() - dynamicRange, img.min()), img.max()]
     plt.clim(clim)
     plt.xlabel('Along Track (m)')
@@ -45,6 +45,5 @@ def plotSasImage(A, dynamicRange, normFlag=None, output_dir='output_plots', file
         h.set_label('Amplitude (dB re: 1V @ 1m)')
     else:
         h.set_label('Amplitude (dB re: 1V)')
-    plt.gca().invert_yaxis()  # 0 at top for y-axis
     plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection.png'), dpi=300, bbox_inches='tight')
     #plt.show()
