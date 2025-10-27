@@ -45,7 +45,7 @@ def fileAttribute(filename):
     else:
         return None
 
-def cropTarget(sasImg, xVec, yVec, plot=True, filename=None):
+def cropTarget(sasImg, xVec, yVec, plot=True, filename=None, output_dir=None, channel=None):
     """
     Crop target chips from the SAS image based on the target positions.
 
@@ -144,7 +144,10 @@ def cropTarget(sasImg, xVec, yVec, plot=True, filename=None):
             h = plt.colorbar()
             h.set_label('Amplitude (dB re: 1V @ 1m)')
             
-            #plt.tight_layout()
-            
+            if output_dir and filename and channel is not None:
+                plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{channel}_{i+1}.png'), dpi=300, bbox_inches='tight')
+            elif output_dir and filename:
+                plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_chip_{i+1}.png'), dpi=300, bbox_inches='tight')
+
     plt.show()
     return chips

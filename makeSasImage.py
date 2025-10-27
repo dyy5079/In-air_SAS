@@ -70,13 +70,14 @@ plt.yticks(np.arange(yVec[0].item(), yVec[-1].item(), 0.2))  # Y-axis ticks ever
 #plt.gca().invert_xaxis()  # 0 at right for x-axis
 
 plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{loadCh}.png'), dpi=300, bbox_inches='tight')
-plt.show()
+plt.clf()
+#plt.show()
 
 print("Loading and plotting basic SAS image...")
 
 print(f"Successfully loaded image with shape: {tsRaw.shape}")
 
-cropTarget(tsRaw, xVec, yVec, filename=filename)
+cropTarget(tsRaw, xVec, yVec, filename=filename, output_dir=output_dir)
 # Load the complete set of data and pre-process the time series
 # Here the raw acoustic data, along with all of the non-acoustic parameters
 # are loaded and pre-processed
@@ -119,5 +120,5 @@ for m in range(len(chanSelect)):
     plt.figure(figsize=(12, 4))  # width=12 inches, height=4 inches
     plotSasImage(backprojectionImg[m], dynamicRange, normFlag, output_dir, filename, chanSelect, m)
     #plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection_ch{m}.png'), dpi=300, bbox_inches='tight')
-    plt.show()
-    cropTarget(backprojectionImg[m].Results.Bp.image, backprojectionImg[m].Results.Bp.xVect, backprojectionImg[m].Results.Bp.yVect, filename=filename)
+    #plt.show()
+    cropTarget(backprojectionImg[m].Results.Bp.image, backprojectionImg[m].Results.Bp.xVect, backprojectionImg[m].Results.Bp.yVect, filename=filename, output_dir=output_dir, channel=chanSelect[m])
