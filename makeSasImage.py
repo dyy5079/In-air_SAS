@@ -70,14 +70,12 @@ plt.yticks(np.arange(yVec[0].item(), yVec[-1].item(), 0.2))  # Y-axis ticks ever
 #plt.gca().invert_xaxis()  # 0 at right for x-axis
 
 plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{loadCh}.png'), dpi=300, bbox_inches='tight')
-plt.clf()
 #plt.show()
 
 print("Loading and plotting basic SAS image...")
 
 print(f"Successfully loaded image with shape: {tsRaw.shape}")
 
-cropTarget(tsRaw, xVec, yVec, filename=filename, output_dir=output_dir)
 # Load the complete set of data and pre-process the time series
 # Here the raw acoustic data, along with all of the non-acoustic parameters
 # are loaded and pre-processed
@@ -104,8 +102,8 @@ dynamicRange = 35  # dynamic range to display in the image, dB
 
 # Reconstruct imagery one channel (one microphone) at a time
 backprojectionImg = []
-for m in range(len(chanSelect)):
-#for m in range(1):  # for testing, only reconstruct channel 1
+#for m in range(len(chanSelect)):
+for m in range(1):  # for testing, only reconstruct channel 1
     # pass the image reconstruction parameters to the data structure
     A[m].Results.Bp.xVect = np.arange(along_track[0], along_track[1] + dx, dx)
     A[m].Results.Bp.yVect = np.arange(cross_track[0], cross_track[1] + dy, dy)
@@ -121,4 +119,4 @@ for m in range(len(chanSelect)):
     plotSasImage(backprojectionImg[m], dynamicRange, normFlag, output_dir, filename, chanSelect, m)
     #plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection_ch{m}.png'), dpi=300, bbox_inches='tight')
     #plt.show()
-    cropTarget(backprojectionImg[m].Results.Bp.image, backprojectionImg[m].Results.Bp.xVect, backprojectionImg[m].Results.Bp.yVect, filename=filename, output_dir=output_dir, channel=chanSelect[m])
+    cropTarget(backprojectionImg[m], dynamicRange=dynamicRange, normFlag=normFlag, plot=True, filename=filename, output_dir=output_dir, channel=chanSelect[m])

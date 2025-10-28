@@ -45,7 +45,7 @@ def fileAttribute(filename):
     else:
         return None
 
-def cropTarget(sasImg, xVec, yVec, plot=True, filename=None, output_dir=None, channel=None):
+def cropTarget(A, dynamicRange=0, normFlag=True, plot=True, filename=None, output_dir=None, channel=None):
     """
     Crop target chips from the SAS image based on the target positions.
 
@@ -65,6 +65,16 @@ def cropTarget(sasImg, xVec, yVec, plot=True, filename=None, output_dir=None, ch
     chips : list of 2D numpy arrays
         The cropped target chips from the SAS image.
     """
+    xVec = A.Results.Bp.xVect
+    yVec = A.Results.Bp.yVect
+    image = A.Results.Bp.image
+
+    if normFlag:
+        rNorm = 20 * np.log10(np.tile(yVec, (len(xVec), 1)).T)
+    else:
+        rNorm = 0
+
+    sasImg = 20 * np.log10(np.abs(image) + 1e-12) + rNorm #adding 1e-12 to avoid log of zero
     
     # Decode filename if provided
     file = None
@@ -118,19 +128,17 @@ def cropTarget(sasImg, xVec, yVec, plot=True, filename=None, output_dir=None, ch
             
         for i, (chip, pos) in enumerate(zip(chips, targetPos)):
             # Create a new figure for each chip with square aspect ratio
-            plt.figure(i + 1)
-            
-            # Plot magnitude in dB
-            chipNormalized = 20 * np.log10(np.abs(chip) + 1e-10)
+            fig = plt.figure(i + 1)
+            fig.clf()
             
             # Create extent for proper axis labels
             
             
-            plt.imshow(chipNormalized, 
-                          aspect='equal',  # Square aspect ratio
-                          cmap=ListedColormap(sasColormap()),
-                          extent = [-chipLx/2, chipLx/2, -chipLy/2, chipLy/2],
-                          origin='lower')
+            plt.imshow( chip, 
+                        aspect='equal',  # Square aspect ratio
+                        cmap=ListedColormap(sasColormap()),
+                        extent = [-chipLx/2, chipLx/2, -chipLy/2, chipLy/2],
+                        origin='lower')
             
             # Create title with filename info if available
             title = f'Target {i+1} at ({pos[0]:.2f}, {pos[1]:.2f}) m'
