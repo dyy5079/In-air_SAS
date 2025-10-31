@@ -45,6 +45,6 @@ def plotSasImage(A, dynamicRange, normFlag=None, output_dir='output_plots', file
         h.set_label('Amplitude (dB re: 1V @ 1m)')
     else:
         h.set_label('Amplitude (dB re: 1V)')
-    plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection.png'), dpi=300, bbox_inches='tight')
+    #plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection.png'), dpi=300, bbox_inches='tight')
 
     return clim

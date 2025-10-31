@@ -11,6 +11,8 @@ import os
 import glob
 from utilities import packToStruct, reconstructImage, plotSasImage, sasColormap
 from cropTarget import cropTarget
+from kSpaceCrop import kSpaceCrop
+from saveh5 import saveh5
 
 from matplotlib.colors import ListedColormap
 # Setup the paths to the data file and code repository for processing and analysis
@@ -40,7 +42,7 @@ for f in h5_files:
 print()
 
 # Create output directory for saving plots
-output_dir = os.path.join(basePath, 'output_plots')
+output_dir = os.path.join(basePath, 'outputs')
 os.makedirs(output_dir, exist_ok=True)
 
 # Process each file
@@ -102,13 +104,16 @@ for dPath in h5_files:
         backprojectionImg.append(reconstructImage(A[m], resampling_ratio, img_plane, fov))
         print(f'Backprojection of Channel {chanSelect[m]} Complete')
         
+        # Save the reconstructed image to an HDF5 file
+        saveh5(backprojectionImg[m], filename=filename, output_dir=output_dir, channel=chanSelect[m])
+
         # plot the reconstructed imagery
         plt.figure(figsize=(12, 4))  # width=12 inches, height=4 inches
         plotSasImage(backprojectionImg[m], dynamicRange, normFlag, output_dir, filename, chanSelect, m)
-        #plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection_ch{m}.png'), dpi=300, bbox_inches='tight')
-        #plt.show()
-        cropTarget(backprojectionImg[m], dynamicRange=dynamicRange, normFlag=normFlag, filename=filename, output_dir=output_dir, channel=chanSelect[m])
-    
+        plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection_ch{m}.png'), dpi=300, bbox_inches='tight')
+        plt.close('all')
+        cropTarget(backprojectionImg[m], dynamicRange=dynamicRange, normFlag=normFlag, filename=filename, plot=True, output_dir=output_dir, channel=chanSelect[m])
+        kSpaceCrop(backprojectionImg[m], dynamicRange=dynamicRange, normFlag=False, filename=filename, plot=True, output_dir=output_dir, channel=chanSelect[m])
     print(f"Completed processing: {filename}")
 
 print(f"\n{'='*60}")
