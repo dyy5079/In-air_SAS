@@ -3,7 +3,7 @@ data/
 
 # Ignore generated plots
 output_plots/
-output/
+outputs/
 
 # Python cache files
 __pycache__/

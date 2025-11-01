@@ -30,7 +30,7 @@ if dataFolder == '':
 
 # Get all .h5 files in the scenes folder
 scenes_path = os.path.join(dataFolder, 'scenes')
-h5_files = glob.glob(os.path.join(scenes_path, '*.h5'))
+h5_files = glob.glob(os.path.join(scenes_path, 't4*.h5'))
 
 if not h5_files:
     print(f"Error: No .h5 files found in {scenes_path}")
@@ -115,7 +115,7 @@ for dPath in h5_files:
         cropTarget(backprojectionImg[m], dynamicRange=dynamicRange, normFlag=normFlag, filename=filename, plot=True, output_dir=output_dir, channel=chanSelect[m])
         kSpaceCrop(backprojectionImg[m], dynamicRange=dynamicRange, normFlag=False, filename=filename, plot=True, output_dir=output_dir, channel=chanSelect[m])
     print(f"Completed processing: {filename}")
-
+    plt.close('all')
 print(f"\n{'='*60}")
 print(f"All files processed successfully!")
 print(f"{'='*60}")
