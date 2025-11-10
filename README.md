@@ -56,26 +56,48 @@ make format
 make help
 ```
 
+
+
 ## 📁 Project Structure
 
 ```
 In-air_SAS/
-├── makeSasImage.py          # Main processing script (converted from MATLAB)
-├── utilities/               # Python utility functions package
+├── FeatureIdn_Classification/   # Feature identification and classification scripts
+│   ├── env1Idn.py
+│   ├── ImgProcessing.py
+├── utilities/                   # Python utility functions package
 │   ├── __init__.py
-│   ├── packToStruct.py     # Data loading and preprocessing
-│   ├── reconstructImage.py # Image reconstruction algorithms
-│   ├── plotSasImage.py     # Visualization functions
-│   └── ...
-├── requirements.txt         # Production dependencies
-├── requirements-dev.txt     # Development dependencies
-├── setup.sh                # Automated setup script (Linux/macOS)
-├── setup.bat               # Automated setup script (Windows)
-├── test_utilities.py       # Package tests
-├── Makefile                # Development commands
-└── docs/                   # Documentation
+│   ├── CFARDetector2D.py
+│   ├── freqVecGen.py
+│   ├── genLfm.py
+│   ├── getAirSpeed.py
+│   ├── initStruct.py
+│   ├── packToStruct.py
+│   ├── plotSasImage.py
+│   ├── reconstructImage.py
+│   ├── sasColormap.py
+├── Misc/                        # Miscellaneous scripts and configs
+│   ├── Makefile
+│   ├── requirements-dev.txt
+│   ├── requirements.txt
+│   ├── setup.bat
+│   ├── setup.sh
+├── README/                      # Documentation
+│   ├── INSTALLATION.md
+│   ├── PYTHON_CONVERSION_README.md
+├── config.ini                   # Default configuration
+├── makeSasImage.py              # Main processing script (converted from MATLAB)
+├── cropTarget.py                # Cropping utility
+├── kSpaceCrop.py                # k-space cropping utility
+├── saveh5.py                    # HDF5 saving utility
+├── README.md                    # Project overview
+├── .gitignore                   # Git ignore rules
 ```
 
+**Note:**
+- The `data/` and `outputs/` directories are ignored by git (see `.gitignore`). They will not be present in the GitHub repository. You must create these locally and add your own data and results.
+- The `venv/` and `__pycache__/` directories are also ignored and should be created locally as needed.
+- Data used for the FeatureIdn_Classification can be found at 
 ## 🔧 Usage
 
 ```python

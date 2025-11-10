@@ -35,8 +35,7 @@ def read_h5(filepath):
         }
 
 
-
-def findCenter(img, debug=False, threshold):
+def findCenter(img, debug=False, threshold=90):
     """
     Find center of an 'O' (ring) in a 2D data matrix using thresholding and centroid.
     Parameters:
@@ -62,13 +61,14 @@ def findCenter(img, debug=False, threshold):
     extent = [0, 50, 0, 50]  # x: 0-50 cm, y: 0-50 cm
 
     # Plot the normalized dB magnitude image
-    plt.figure()
-    plt.imshow(sasImg, cmap=ListedColormap(sasColormap()), aspect='equal', extent=extent, origin='lower')
-    plt.title('Normalized dB Magnitude (A_dB) t3e2_06')
-    plt.colorbar(label='Normalized dB')
-    plt.xlabel('Along-track (cm)', fontsize=10)
-    plt.ylabel('Cross-track (cm)', fontsize=10)
-    plt.show()
+    if debug:
+        plt.figure()
+        plt.imshow(sasImg, cmap=ListedColormap(sasColormap()), aspect='equal', extent=extent, origin='lower')
+        plt.title('Normalized dB Magnitude (A_dB) t3e2_06')
+        plt.colorbar(label='Normalized dB')
+        plt.xlabel('Along-track (cm)', fontsize=10)
+        plt.ylabel('Cross-track (cm)', fontsize=10)
+        plt.show()
 
     # Threshold at 90th percentile to create binary mask
     if threshold is None:
@@ -76,28 +76,31 @@ def findCenter(img, debug=False, threshold):
         return None
     th = np.percentile(sasImg, threshold)
     mask = sasImg > th
-    plt.figure()
-    plt.imshow(mask, cmap='gray', extent=extent, origin='lower', aspect='equal')
-    plt.title(f'Binary Mask ({threshold}th Percentile Threshold)')
-    plt.xlabel('Along-track (cm)', fontsize=10)
-    plt.ylabel('Cross-track (cm)', fontsize=10)
-    plt.show()
+    if debug:
+        plt.figure()
+        plt.imshow(mask, cmap='gray', extent=extent, origin='lower', aspect='equal')
+        plt.title(f'Binary Mask ({threshold}th Percentile Threshold)')
+        plt.xlabel('Along-track (cm)', fontsize=10)
+        plt.ylabel('Cross-track (cm)', fontsize=10)
+        plt.show()
 
     mask = ndimage.binary_opening(mask, structure=np.ones((5,5)))
-    plt.figure()
-    plt.imshow(mask, cmap='gray', extent=extent, origin='lower', aspect='equal')
-    plt.title(f'Binary Mask after binary_opening({threshold}th Percentile Threshold)')
-    plt.xlabel('Along-track (cm)', fontsize=10)
-    plt.ylabel('Cross-track (cm)', fontsize=10)
-    plt.show()
+    if debug:
+        plt.figure()
+        plt.imshow(mask, cmap='gray', extent=extent, origin='lower', aspect='equal')
+        plt.title(f'Binary Mask after binary_opening({threshold}th Percentile Threshold)')
+        plt.xlabel('Along-track (cm)', fontsize=10)
+        plt.ylabel('Cross-track (cm)', fontsize=10)
+        plt.show()
 
     mask = ndimage.binary_closing(mask, structure=np.ones((5,5)))
-    plt.figure()
-    plt.imshow(mask, cmap='gray', extent=extent, origin='lower', aspect='equal')
-    plt.title(f'Binary Mask after binary_closing({threshold}th Percentile Threshold)')
-    plt.xlabel('Along-track (cm)', fontsize=10)
-    plt.ylabel('Cross-track (cm)', fontsize=10)
-    plt.show()
+    if debug:
+        plt.figure()
+        plt.imshow(mask, cmap='gray', extent=extent, origin='lower', aspect='equal')
+        plt.title(f'Binary Mask after binary_closing({threshold}th Percentile Threshold)')
+        plt.xlabel('Along-track (cm)', fontsize=10)
+        plt.ylabel('Cross-track (cm)', fontsize=10)
+        plt.show()
 
     if mask.sum() > 10:
         cy, cx = ndimage.center_of_mass(mask)
@@ -123,7 +126,6 @@ def findCenter(img, debug=False, threshold):
                 plt.ylabel('Cross-track (cm)', fontsize=10)
                 plt.legend()
                 plt.show()
-            # Return center in cm units
-            return (cx * (50 / width), cy * (50 / height))
-
-    return None
+            center = (cx, cy)
+            return mask, center
+    return None, None
