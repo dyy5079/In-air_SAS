@@ -5,9 +5,9 @@ from scipy import ndimage
 from ImgProcessing import findCenter, read_h5
 from sklearn.metrics import roc_curve, auc
 
-dataListO = glob.glob('Z:/PSU PhD/Projects/In-air_SAS/outputs/chip_h5/t3e2_*.h5')
+dataListO = glob.glob('Z:/PSU PhD/Projects/In-air_SAS/outputs/chip_h5/t3e1_*.h5')
 print(len(dataListO))
-dataListQ = glob.glob('Z:/PSU PhD/Projects/In-air_SAS/outputs/chip_h5/t4e2_*.h5')
+dataListQ = glob.glob('Z:/PSU PhD/Projects/In-air_SAS/outputs/chip_h5/t4e1_*.h5')
 print(len(dataListQ))
 DetCountO = []
 DetCountQ = []
@@ -45,10 +45,10 @@ for threshold in np.arange(99, 75, -1):
         # plt.show()
 
         newMask = ndimage.binary_opening(mask, structure=np.ones((newMaskMM,newMaskMM)))
-        if threshold == 90 and datum == dataListO[100]:
+        if threshold == 55 and datum == dataListO[0]:
             plt.figure()
             extent = [0, 50, 0, 50]
-            plt.imshow(newMask, cmap='gray', extent=extent, origin='lower', aspect='equal')
+            plt.imshow(mask, cmap='gray', extent=extent, origin='lower', aspect='equal')
             plt.title(f'Binary Mask after binary_opening({threshold}th Percentile Threshold)')
             plt.xlabel('Along-track (cm)', fontsize=10)
             plt.ylabel('Cross-track (cm)', fontsize=10)
@@ -62,14 +62,7 @@ for threshold in np.arange(99, 75, -1):
             if component_size > maxArea:
                 newMask[labeled_mask == i] = 0  # Remove large components
         
-        if threshold == 90 and datum == dataListQ[100]:
-            plt.figure()
-            extent = [0, 50, 0, 50]
-            plt.imshow(newMask, cmap='gray', extent=extent, origin='lower', aspect='equal')
-            plt.title(f'Binary Mask after removing({threshold}th Percentile Threshold)')
-            plt.xlabel('Along-track (cm)', fontsize=10)
-            plt.ylabel('Cross-track (cm)', fontsize=10)
-            plt.show()
+
 
         # Classify based on remaining mask area
         if newMask.sum() > tailArea:
@@ -113,14 +106,15 @@ for threshold in range(99, 75, -1):
         # plt.show()
 
         newMask = ndimage.binary_opening(mask, structure=np.ones((newMaskMM,newMaskMM)))
-        if threshold == 90 and datum == dataListO[100]:
+        if threshold == 55 and datum == dataListQ[0]:
             plt.figure()
             extent = [0, 50, 0, 50]
-            plt.imshow(newMask, cmap='gray', extent=extent, origin='lower', aspect='equal')
+            plt.imshow(mask, cmap='gray', extent=extent, origin='lower', aspect='equal')
             plt.title(f'Binary Mask after binary_opening({threshold}th Percentile Threshold)')
             plt.xlabel('Along-track (cm)', fontsize=10)
             plt.ylabel('Cross-track (cm)', fontsize=10)
             plt.show()
+
 
         # Remove connected components that exceed size threshold
         labeled_mask, num_features = ndimage.label(newMask)
@@ -129,15 +123,6 @@ for threshold in range(99, 75, -1):
             component_size = np.sum(labeled_mask == i)
             if component_size > maxArea:
                 newMask[labeled_mask == i] = 0  # Remove large components
-
-        if threshold == 90 and datum == dataListQ[100]:
-            plt.figure()
-            extent = [0, 50, 0, 50]
-            plt.imshow(newMask, cmap='gray', extent=extent, origin='lower', aspect='equal')
-            plt.title(f'Binary Mask after removing({threshold}th Percentile Threshold)')
-            plt.xlabel('Along-track (cm)', fontsize=10)
-            plt.ylabel('Cross-track (cm)', fontsize=10)
-            plt.show()
 
         # Classify based on remaining mask area
         if newMask.sum() > tailArea:
@@ -174,11 +159,10 @@ plt.figure()
 plt.plot(FPR, TPR, color='darkorange', lw=2, marker='o', label=f'ROC curve (area = {roc_auc:.2f})')
 plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--', label='Random classifier')
 plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Receiver Operating Characteristic (ROC)')
 plt.legend(loc="lower right")
 plt.grid(True, alpha=0.3)
 plt.show()
-

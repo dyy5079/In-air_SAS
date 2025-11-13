@@ -35,9 +35,9 @@ def read_h5(filepath):
         }
 
 
-def findCenter(img, debug=False, threshold=90):
+def findCenter(img, debug=False, threshold=90, cutArea=1.0, MM=5):
     """
-    Find center of an 'O' (ring) in a 2D data matrix using thresholding and centroid.
+    Find center of an 'O' (ring) in a 2D data matrix using thresholding and vertical bounds.
     Parameters:
       img: 2D numpy array (can be complex)
       debug: if True, show diagnostic plots
@@ -48,23 +48,23 @@ def findCenter(img, debug=False, threshold=90):
       1. Convert input to normalized dB magnitude image.
       2. Threshold the image at the provided percentile to create a binary mask.
       3. Clean the mask using morphological opening, closing, and hole filling.
-      4. If a sufficient region is found, compute its centroid as the O center.
-      5. If debug=True, plot the image, mask, detected center, and an estimated O circle.
+      4. For each x-column, find the highest and lowest y pixel where mask==1.
+      5. Compute the center as the mean x, and mean of (y_highest + y_lowest)/2 for all valid columns.
+      6. If debug=True, plot the image, mask, detected center, and an estimated O circle.
     """
     sasImg = 20 * np.log10(np.abs(img) + 1e-12)
     sasImg = sasImg - sasImg.min()
     if sasImg.max() != 0:
         sasImg = sasImg / sasImg.max()
 
-    # Set up axis scaling for 50cm x 50cm image
     height, width = sasImg.shape
     extent = [0, 50, 0, 50]  # x: 0-50 cm, y: 0-50 cm
 
-    # Plot the normalized dB magnitude image
+    # Plot the normalized dB magnitude image (will add center overlay later)
     if debug:
         plt.figure()
         plt.imshow(sasImg, cmap=ListedColormap(sasColormap()), aspect='equal', extent=extent, origin='lower')
-        plt.title('Normalized dB Magnitude (A_dB) t3e2_06')
+        plt.title('Normalized dB Magnitude (A_dB)')
         plt.colorbar(label='Normalized dB')
         plt.xlabel('Along-track (cm)', fontsize=10)
         plt.ylabel('Cross-track (cm)', fontsize=10)
@@ -84,7 +84,7 @@ def findCenter(img, debug=False, threshold=90):
         plt.ylabel('Cross-track (cm)', fontsize=10)
         plt.show()
 
-    mask = ndimage.binary_opening(mask, structure=np.ones((5,5)))
+    mask = ndimage.binary_opening(mask, structure=np.ones((MM, MM)))
     if debug:
         plt.figure()
         plt.imshow(mask, cmap='gray', extent=extent, origin='lower', aspect='equal')
@@ -93,7 +93,7 @@ def findCenter(img, debug=False, threshold=90):
         plt.ylabel('Cross-track (cm)', fontsize=10)
         plt.show()
 
-    mask = ndimage.binary_closing(mask, structure=np.ones((5,5)))
+    mask = ndimage.binary_closing(mask, structure=np.ones((MM, MM)))
     if debug:
         plt.figure()
         plt.imshow(mask, cmap='gray', extent=extent, origin='lower', aspect='equal')
@@ -102,30 +102,41 @@ def findCenter(img, debug=False, threshold=90):
         plt.ylabel('Cross-track (cm)', fontsize=10)
         plt.show()
 
+    # Use center of mass for x-coordinate and vertical bounds for y-coordinate
     if mask.sum() > 10:
-        cy, cx = ndimage.center_of_mass(mask)
-        if np.isfinite(cx) and np.isfinite(cy):
-            if debug:
-                # Estimate radius in cm (diameter is 20.3 cm)
-                radius_cm = 1.15 * (20.3 / 2)
-
-                fig, ax = plt.subplots()
-                im = ax.imshow(sasImg, cmap=ListedColormap(sasColormap()), aspect='equal', extent=extent, origin='lower')
-                plt.title(f't4e2_06 {threshold}th Percentile Mask and Detected O Center')
-                cbar = plt.colorbar(im, ax=ax)
-                cbar.set_label('Normalized dB')
-                ax.contour(np.linspace(0, 50, width), np.linspace(0, 50, height), mask, colors='r', linewidths=1)
-                # Convert pixel coordinates to cm for plotting
-                x_cm = cx * (50 / width)
-                y_cm = cy * (50 / height)
-                ax.plot(x_cm, y_cm, 'rx', label='Detected Center')
-                # Draw the assumed O as a circle (radius in cm)
-                circle = plt.Circle((x_cm, y_cm), radius_cm, color='cyan', fill=False, linewidth=2, label='Assumed O')
-                ax.add_patch(circle)
-                plt.xlabel('Along-track (cm)', fontsize=10)
-                plt.ylabel('Cross-track (cm)', fontsize=10)
-                plt.legend()
-                plt.show()
+        cy_com, cx_com = ndimage.center_of_mass(mask)
+        y_coords, x_coords = np.where(mask == 1)
+        
+        if len(y_coords) > 0:
+            y_highest = np.min(y_coords)  # highest y (smallest index, since y=0 is at top)
+            y_lowest = np.max(y_coords)   # lowest y (largest index)
+            
+            # If highest y is 0, find the next highest y pixel
+            if y_highest == 0 and len(np.unique(y_coords)) > 1:
+                unique_y = np.unique(y_coords)
+                y_highest = unique_y[1]
+            
+            # Center uses x from center of mass and y halfway between highest and lowest
+            cx = cx_com
+            cy = (y_highest + y_lowest) / 2
             center = (cx, cy)
-            return mask, center
-    return None, None
+        else:
+            center = None
+
+        if debug:
+            radius_cm = cutArea * (20.3 / 2)
+            
+            # Plot dB magnitude with detected center overlay
+            plt.figure()
+            plt.imshow(sasImg, cmap=ListedColormap(sasColormap()), aspect='equal', extent=extent, origin='lower')
+            plt.plot(cx * (50/width), cy * (50/height), 'rx', markersize=10, label='Detected Center')
+            circle_overlay = plt.Circle((cx * (50/width), cy * (50/height)), radius_cm, color='cyan', fill=False, linewidth=2, label='Assumed O')
+            plt.gca().add_patch(circle_overlay)
+            plt.title('Normalized dB Magnitude with Detected Center Overlay')
+            plt.colorbar(label='Normalized dB')
+            plt.xlabel('Along-track (cm)', fontsize=10)
+            plt.ylabel('Cross-track (cm)', fontsize=10)
+            plt.legend()
+            plt.show()
+        return mask, center
+    return mask, None
