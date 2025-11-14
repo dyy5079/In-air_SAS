@@ -4,7 +4,7 @@ import os
 from .sasColormap import sasColormap
 from matplotlib.colors import ListedColormap
 
-def plotSasImage(A, dynamicRange, normFlag=None, output_dir='output_plots', filename='sas_image', chanSelect=[1], m=0):
+def plotSasImage(A, dynamicRange, normFlag=None, filename='sas_image', chanSelect=[1], m=0):
     """
     PLOTSASIMAGE Makes plot of linear AirSAS image
         A = Single-channel AirSAS data structure

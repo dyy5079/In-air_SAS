@@ -30,7 +30,7 @@ if dataFolder == '':
 
 # Get all .h5 files in the scenes folder
 scenes_path = os.path.join(dataFolder, 'scenes')
-h5_files = glob.glob(os.path.join(scenes_path, 't4*.h5'))
+h5_files = glob.glob(os.path.join(scenes_path, 't4e*.h5'))
 
 if not h5_files:
     print(f"Error: No .h5 files found in {scenes_path}")
@@ -105,17 +105,34 @@ for dPath in h5_files:
         print(f'Backprojection of Channel {chanSelect[m]} Complete')
         
         # Save the reconstructed image to an HDF5 file
-        saveh5(backprojectionImg[m], filename=filename, output_dir=output_dir, channel=chanSelect[m])
+        h5outputdir = os.path.join(basePath, 'outputs','backprojection_h5')
+        os.makedirs(h5outputdir, exist_ok=True)
+        saveh5(backprojectionImg[m], filename=filename, output_dir=h5outputdir, channel=chanSelect[m])
 
         # plot the reconstructed imagery
+        bpoutputdir = os.path.join(basePath, 'outputs','backprojection')
+        os.makedirs(bpoutputdir, exist_ok=True)
         plt.figure(figsize=(12, 4))  # width=12 inches, height=4 inches
-        plotSasImage(backprojectionImg[m], dynamicRange, normFlag, output_dir, filename, chanSelect, m)
-        plt.savefig(os.path.join(output_dir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection_ch{m}.png'), dpi=300, bbox_inches='tight')
+        plotSasImage(backprojectionImg[m], dynamicRange, normFlag, filename, chanSelect, m)
+        plt.savefig(os.path.join(bpoutputdir, f'{filename[:-3]}_ch{chanSelect[m]}_Backprojection_ch{m}.png'), dpi=300, bbox_inches='tight')
         plt.close('all')
-        cropTarget(backprojectionImg[m], dynamicRange=dynamicRange, normFlag=normFlag, filename=filename, plot=True, output_dir=output_dir, channel=chanSelect[m])
-        kSpaceCrop(backprojectionImg[m], dynamicRange=dynamicRange, normFlag=False, filename=filename, plot=True, output_dir=output_dir, channel=chanSelect[m])
+        chipoutputdir = os.path.join(basePath, 'outputs','chip')
+        kchipoutputdir = os.path.join(basePath, 'outputs','kchip')
+        os.makedirs(chipoutputdir, exist_ok=True)
+        os.makedirs(kchipoutputdir, exist_ok=True)
+        cropTarget(backprojectionImg[m], dynamicRange=dynamicRange, normFlag=normFlag, filename=filename, plot=True, output_dir=chipoutputdir, channel=chanSelect[m])
+        kSpaceCrop(backprojectionImg[m], dynamicRange=dynamicRange, normFlag=False, filename=filename, plot=True, output_dir=kchipoutputdir, channel=chanSelect[m])
+
     print(f"Completed processing: {filename}")
+    # Clear all matplotlib figures and free memory
+    plt.clf()  # Clear current figure
+    plt.cla()  # Clear current axes
     plt.close('all')
+
+    # Force garbage collection
+    import gc
+    gc.collect()
+
 print(f"\n{'='*60}")
 print(f"All files processed successfully!")
 print(f"{'='*60}")

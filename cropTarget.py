@@ -80,8 +80,8 @@ def cropTarget(A, dynamicRange=0, normFlag=True, plot=False, filename=None, outp
         #     print(f"  Trial: {file['trial']}")
 
     # Defined chip size from the cfarDetector.m
-    chipLx = 0.5
-    chipLy = 0.5
+    chipLx = 0.75
+    chipLy = 0.75
 
     # Nominal positions of the targets (x,y,z) from cfarDetector.m
     targetPos = np.array([
