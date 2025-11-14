@@ -12,7 +12,7 @@ print(len(dataListQ))
 DetCountO = []
 DetCountQ = []
 maxArea = 200
-cutArea = 1.2
+cutArea = 1.3
 newMaskMM = 6
 debug = False
 MM = 3
